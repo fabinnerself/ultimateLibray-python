@@ -1,5 +1,5 @@
 import motor.motor_asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from typing import Optional
 import logging
 from .config import settings
@@ -8,25 +8,34 @@ logger = logging.getLogger(__name__)
 
 class Database:
     client: Optional[AsyncIOMotorClient] = None
-    database = None
+    database: Optional[AsyncIOMotorDatabase] = None
 
 db = Database()
 
-async def get_database() -> AsyncIOMotorClient:
+async def get_database() -> AsyncIOMotorDatabase:
+    """Get database connection with lazy initialization for Vercel"""
+    if db.database is None:
+        await connect_to_mongo()
     return db.database
 
 async def connect_to_mongo():
     """Create database connection"""
+    if db.client is not None:
+        return  # Already connected
+        
     try:
         mongodb_url = settings.mongodb_connect_uri
         if not mongodb_url:
             raise ValueError("MONGODB_CONNECT_URI environment variable is not set")
         
+        # Optimized settings for serverless environment
         db.client = motor.motor_asyncio.AsyncIOMotorClient(
             mongodb_url,
-            maxPoolSize=10,
-            minPoolSize=10,
+            maxPoolSize=1,  # Reduced for serverless
+            minPoolSize=0,  # Start with 0 connections
+            maxIdleTimeMS=30000,  # Close idle connections faster
             serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=10000,
         )
         
         # Get database name from settings
@@ -45,9 +54,11 @@ async def close_mongo_connection():
     """Close database connection"""
     if db.client:
         db.client.close()
+        db.client = None
+        db.database = None
         logger.info("Disconnected from MongoDB")
 
-# Collections
+# Collections with lazy loading
 async def get_book_collection():
     database = await get_database()
     return database.books
