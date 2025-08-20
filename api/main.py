@@ -15,14 +15,31 @@ from .routers import books, users
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Simplified startup for Vercel - no lifespan manager needed
-# Database connections will be handled per request
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    try:
+        await connect_to_mongo()
+        logger.info("Application startup completed")
+    except Exception as e:
+        logger.error(f"Application startup failed: {e}")
+        raise
+    
+    yield
+    
+    # Shutdown
+    try:
+        await close_mongo_connection()
+        logger.info("Application shutdown completed")
+    except Exception as e:
+        logger.error(f"Application shutdown error: {e}")
 
 # Create FastAPI application
 app = FastAPI(
     title=settings.project_name,
     version=settings.version,
     description=settings.description,
+    lifespan=lifespan,
     docs_url="/docs" if settings.environment == "development" else None,
     redoc_url="/redoc" if settings.environment == "development" else None,
 )
