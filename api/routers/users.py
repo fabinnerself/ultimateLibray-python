@@ -75,7 +75,10 @@ async def register_user(user: UserCreate):
     except HTTPException:
         raise
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.post("/auth/login", response_model=dict)
 async def login_user(user_credentials: UserLogin):
@@ -131,7 +134,10 @@ async def login_user(user_credentials: UserLogin):
     except HTTPException:
         raise
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.get("/users/me", response_model=dict)
 async def get_current_user_profile(current_user: UserInDB = Depends(get_current_active_user)):
@@ -189,7 +195,10 @@ async def update_current_user_profile(
                 update_data[field] = value
         
         if not update_data:
-            return {"msg": "No fields to update"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No fields to update"
+            )
         
         update_data["updated_at"] = datetime.utcnow()
         
@@ -212,7 +221,10 @@ async def update_current_user_profile(
     except HTTPException:
         raise
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.put("/users/me/password", response_model=dict)
 async def change_password(
@@ -250,7 +262,10 @@ async def change_password(
     except HTTPException:
         raise
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.get("/users", response_model=dict)
 async def get_users(
@@ -322,7 +337,10 @@ async def get_users(
     except HTTPException:
         raise
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.get("/users/{user_id}", response_model=dict)
 async def get_user(
@@ -335,7 +353,10 @@ async def get_user(
     try:
         # Validate ObjectId
         if not ObjectId.is_valid(user_id):
-            return {"msg": "Invalid user ID"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid user ID"
+            )
             
         user_collection = await get_user_collection()
         user = await user_collection.find_one(
@@ -351,12 +372,18 @@ async def get_user(
                 "data": user
             }
         
-        return {"msg": "User not found"}, 404
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
         
     except HTTPException:
         raise
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.put("/users/{user_id}", response_model=dict)
 async def update_user(
@@ -370,7 +397,10 @@ async def update_user(
     try:
         # Validate ObjectId
         if not ObjectId.is_valid(user_id):
-            return {"msg": "Invalid user ID"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid user ID"
+            )
             
         user_collection = await get_user_collection()
         
@@ -393,7 +423,10 @@ async def update_user(
                 update_data[field] = value
         
         if not update_data:
-            return {"msg": "No fields to update"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No fields to update"
+            )
             
         update_data["updated_at"] = datetime.utcnow()
         
@@ -406,7 +439,10 @@ async def update_user(
         )
         
         if not result:
-            return {"msg": "User not found"}, 404
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
         
         result["id"] = str(result["_id"])
         del result["_id"]
@@ -419,7 +455,10 @@ async def update_user(
     except HTTPException:
         raise
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.delete("/users/{user_id}", response_model=dict)
 async def delete_user(
@@ -432,7 +471,10 @@ async def delete_user(
     try:
         # Validate ObjectId
         if not ObjectId.is_valid(user_id):
-            return {"msg": "Invalid user ID"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid user ID"
+            )
             
         # Prevent admin from deleting themselves
         if str(current_user.id) == user_id:
@@ -457,11 +499,17 @@ async def delete_user(
         )
         
         if result.modified_count == 0:
-            return {"msg": "User not found"}, 404
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
         
         return {"msg": "User deleted successfully"}
         
     except HTTPException:
         raise
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )

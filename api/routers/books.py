@@ -62,7 +62,10 @@ async def get_books(
         return response
         
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.get("/books/{book_id}", response_model=dict)
 async def get_book(book_id: str):
@@ -72,7 +75,10 @@ async def get_book(book_id: str):
     try:
         # Validate ObjectId
         if not ObjectId.is_valid(book_id):
-            return {"msg": "Invalid book ID"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid book ID"
+            )
             
         book_collection = await get_book_collection()
         book = await book_collection.find_one({"_id": ObjectId(book_id)})
@@ -85,10 +91,16 @@ async def get_book(book_id: str):
                 "data": book
             }
         
-        return {"msg": "Not Found"}, 404
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
         
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.post("/books", response_model=dict)
 async def create_book(
@@ -120,7 +132,10 @@ async def create_book(
         }
         
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.put("/books/{book_id}", response_model=dict)
 async def update_book(
@@ -134,7 +149,10 @@ async def update_book(
     try:
         # Validate ObjectId
         if not ObjectId.is_valid(book_id):
-            return {"msg": "Invalid book ID"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid book ID"
+            )
             
         book_collection = await get_book_collection()
         
@@ -145,7 +163,10 @@ async def update_book(
                 update_data[field] = value
         
         if not update_data:
-            return {"msg": "No fields to update"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No fields to update"
+            )
             
         update_data["updated_at"] = datetime.utcnow()
         
@@ -157,7 +178,10 @@ async def update_book(
         )
         
         if not result:
-            return {"msg": "Not Found"}, 404
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Book not found"
+            )
         
         result["id"] = str(result["_id"])
         del result["_id"]
@@ -168,7 +192,10 @@ async def update_book(
         }
         
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )
 
 @router.delete("/books/{book_id}", response_model=dict)
 async def delete_book(
@@ -181,7 +208,10 @@ async def delete_book(
     try:
         # Validate ObjectId
         if not ObjectId.is_valid(book_id):
-            return {"msg": "Invalid book ID"}, 400
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid book ID"
+            )
             
         book_collection = await get_book_collection()
         
@@ -189,9 +219,15 @@ async def delete_book(
         result = await book_collection.delete_one({"_id": ObjectId(book_id)})
         
         if result.deleted_count == 0:
-            return {"msg": "Not Found"}, 404
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Book not found"
+            )
         
         return {"msg": "Ok"}
         
     except Exception as error:
-        return {"msg": str(error)}, 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
+        )

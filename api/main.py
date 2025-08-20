@@ -69,13 +69,19 @@ app.include_router(
 @app.exception_handler(500)
 async def internal_server_error_handler(request, exc):
     logger.error(f"Internal server error: {exc}")
-    return HTTPException(
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
         status_code=500,
-        detail="Internal server error"
+        content={"detail": "Internal server error"}
     )
 
-# For Vercel deployment
-handler = app
+# For Vercel deployment - using Mangum adapter
+try:
+    from mangum import Mangum
+    handler = Mangum(app, lifespan="off")
+except ImportError:
+    # Fallback if Mangum is not available
+    handler = app
 
 if __name__ == "__main__":
     import uvicorn
